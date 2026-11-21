@@ -20,13 +20,15 @@ import {
   ArrowUpRight,
   Info,
   ShieldCheck,
-  AlertOctagon
+  AlertOctagon,
+  Activity
 } from 'lucide-react';
 import { api } from '../api';
 import { AnalysisReport, UnifiedFinding } from '../types';
 import { RiskBadge } from '../components/RiskBadge';
 import { DiffViewer } from '../components/DiffViewer';
 import { ImpactGraph } from '../components/ImpactGraph';
+import { ObservabilityView } from '../components/ObservabilityView';
 
 export const AnalysisResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -36,7 +38,7 @@ export const AnalysisResults: React.FC = () => {
   const [expandedFindings, setExpandedFindings] = useState<Record<string, boolean>>({});
 
   const [activeTab, setActiveTab] = useState<
-    'findings' | 'summary' | 'changes' | 'risk' | 'bugs' | 'security' | 'impact' | 'blast' | 'regression' | 'tests' | 'fixes'
+    'findings' | 'summary' | 'changes' | 'risk' | 'bugs' | 'security' | 'impact' | 'blast' | 'regression' | 'tests' | 'fixes' | 'observability'
   >('findings');
 
   useEffect(() => {
@@ -101,6 +103,12 @@ export const AnalysisResults: React.FC = () => {
     { id: 'regression', label: 'Regressions', icon: Layers, count: report.regression_risks.length },
     { id: 'tests', label: 'Recommended Tests', icon: TestTube, count: report.test_recommendations.length },
     { id: 'fixes', label: 'Suggested Patches', icon: Check, count: report.suggested_fixes.length },
+    { 
+      id: 'observability', 
+      label: 'Trace & Observability', 
+      icon: Activity, 
+      count: report.observability ? `${report.observability.parallel_speedup_factor.toFixed(1)}x` : null 
+    },
   ];
 
   return (
@@ -672,6 +680,11 @@ export const AnalysisResults: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* Tab: Observability & Agent Performance Waterfall */}
+        {activeTab === 'observability' && (
+          <ObservabilityView report={report.observability} sessionId={report.session_id} />
         )}
       </div>
     </div>

@@ -214,6 +214,60 @@ export interface AnalysisReport {
   review_comments: ReviewComment[];
   suggested_fixes: FixPatch[];
   risk_assessment: RiskAssessment;
+  observability?: ObservabilityReport;
+}
+
+export interface TraceSpan {
+  span_id: string;
+  parent_span_id?: string;
+  name: string;
+  agent_name?: string;
+  model_name?: string;
+  start_time_iso: string;
+  end_time_iso?: string;
+  duration_ms: number;
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_usd: number;
+  provenance_hash?: string;
+  input_snippet?: string;
+  output_snippet?: string;
+  error_message?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface AgentPerformanceMetric {
+  agent_name: string;
+  model: string;
+  duration_ms: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  tokens: number;
+  cost_usd: number;
+  findings_count: number;
+}
+
+export interface ObservabilityReport {
+  trace_id: string;
+  session_id: string;
+  total_wall_time_ms: number;
+  sequential_time_ms: number;
+  parallel_speedup_factor: number;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  spans: TraceSpan[];
+  agent_metrics: AgentPerformanceMetric[];
+  langfuse_trace_url?: string;
+  audit_events: Array<{
+    timestamp: string;
+    event: string;
+    agent: string;
+    details?: string;
+  }>;
 }
 
 export interface ProgressEvent {

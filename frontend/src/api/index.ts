@@ -1,4 +1,4 @@
-import { AnalysisReport, DashboardStats } from '../types';
+import { AnalysisReport, DashboardStats, ObservabilityReport } from '../types';
 
 // Support VITE_API_URL environment variable (for Render/Netlify cross-origin deployment), default to /api
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') + '/api';
@@ -146,5 +146,40 @@ export const api = {
 
   getExportJsonUrl(sessionId: string) {
     return `${API_BASE}/reports/${sessionId}/json`;
+  },
+
+  async getObservabilityOverview(): Promise<{
+    total_sessions_tracked: number;
+    total_tokens_consumed: number;
+    total_prompt_tokens: number;
+    total_completion_tokens: number;
+    total_cost_usd: number;
+    avg_wall_time_ms: number;
+    avg_speedup_factor: number;
+    agent_performance: Array<{
+      agent_name: string;
+      invocations: number;
+      avg_duration_ms: number;
+      total_tokens: number;
+      total_cost_usd: number;
+    }>;
+    recent_traces: Array<{
+      trace_id: string;
+      wall_time_ms: number;
+      speedup: number;
+      tokens: number;
+      cost_usd: number;
+      spans_count: number;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/observability/overview`);
+    if (!res.ok) throw new Error('Failed to fetch observability telemetry');
+    return res.json();
+  },
+
+  async getTrace(sessionId: string): Promise<ObservabilityReport> {
+    const res = await fetch(`${API_BASE}/observability/trace/${sessionId}`);
+    if (!res.ok) throw new Error('Failed to fetch trace data');
+    return res.json();
   }
 };

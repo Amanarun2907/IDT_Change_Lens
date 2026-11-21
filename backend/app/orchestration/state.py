@@ -4,7 +4,8 @@ from app.models.schemas import (
     AnalysisMode, ChangedFile, CodeUnderstandingOutput,
     BugFinding, SecurityFinding, ImpactItem, ImpactGraph,
     RegressionRisk, TestRecommendation, TestExecutionResult,
-    ReviewComment, FixPatch, RiskAssessment, UnifiedFinding
+    ReviewComment, FixPatch, RiskAssessment, UnifiedFinding,
+    ObservabilityReport
 )
 
 @dataclass
@@ -47,6 +48,7 @@ class MultiAgentState:
     change_summary: str = ""
     risk_justification: str = ""
     affected_components: List[str] = field(default_factory=list)
+    observability: Optional[ObservabilityReport] = None
 
     # Errors or partial failures
     failed_agents: List[str] = field(default_factory=list)
@@ -85,5 +87,6 @@ class MultiAgentState:
             "change_summary": self.change_summary,
             "risk_justification": self.risk_justification,
             "affected_components": self.affected_components,
+            "observability": self.observability,
             "failed_agents": self.failed_agents
         }

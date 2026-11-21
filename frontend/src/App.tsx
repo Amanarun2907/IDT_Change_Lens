@@ -8,6 +8,7 @@ import { AnalysisResults } from './pages/AnalysisResults';
 import { CodeExplorer } from './pages/CodeExplorer';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
+import { Observability } from './pages/Observability';
 
 export const App: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
             <Route path="/report/:sessionId" element={<AnalysisResults />} />
             <Route path="/explorer/:sessionId" element={<CodeExplorer />} />
             <Route path="/history" element={<History />} />
+            <Route path="/observability" element={<Observability />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

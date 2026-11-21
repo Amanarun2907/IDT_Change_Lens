@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import settings
 from app.models.database import init_db
-from app.api.routes import analysis, github, reports, history, settings as settings_route
+from app.api.routes import analysis, github, reports, history, settings as settings_route, observability
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,6 +43,7 @@ app.include_router(github.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(history.router, prefix="/api")
 app.include_router(settings_route.router, prefix="/api")
+app.include_router(observability.router, prefix="/api")
 
 @app.get("/api/health")
 async def health_check():

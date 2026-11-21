@@ -396,7 +396,8 @@ class AnalysisService:
             test_execution=state.test_execution,
             review_comments=state.review_comments,
             suggested_fixes=state.suggested_fixes,
-            risk_assessment=state.risk_assessment
+            risk_assessment=state.risk_assessment,
+            observability=state.observability
         )
 
         self.cached_reports[session_id] = report

@@ -224,6 +224,49 @@ class RiskAssessment(BaseModel):
     recommendations_to_reduce_risk: List[str] = Field(default_factory=list)
     human_review_checklist: List[str] = Field(default_factory=list)
 
+# Observability & Tracing Schemas (Langfuse / OpenTelemetry Compatible)
+class TraceSpan(BaseModel):
+    span_id: str
+    parent_span_id: Optional[str] = None
+    name: str
+    agent_name: str
+    start_time: str
+    end_time: str
+    duration_ms: float
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
+    status: str = "SUCCESS"  # SUCCESS | RETRY | FAILED
+    model: str = "gemini-2.5-flash"
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+class AgentPerformanceMetric(BaseModel):
+    agent_name: str
+    duration_ms: float
+    tokens: int
+    cost_usd: float
+    status: str = "SUCCESS"
+
+class ObservabilityReport(BaseModel):
+    trace_id: str
+    session_id: Optional[str] = None
+    total_wall_time_ms: float
+    sequential_estimated_time_ms: float
+    sequential_time_ms: Optional[float] = None
+    parallel_speedup_factor: float = 1.0
+    total_prompt_tokens: int = 0
+    total_completion_tokens: int = 0
+    total_tokens: int = 0
+    total_cost_usd: float = 0.0
+    cost_per_kloc: float = 0.0
+    primary_model: str = "gemini-2.5-flash"
+    provider: str = "gemini"
+    langfuse_status: str = "ACTIVE_LOCAL_BUFFER"
+    spans: List[TraceSpan] = Field(default_factory=list)
+    agent_metrics: List[AgentPerformanceMetric] = Field(default_factory=list)
+    audit_events: List[Dict[str, Any]] = Field(default_factory=list)
+
 # Full Consolidated Report
 class AnalysisReport(BaseModel):
     session_id: str
@@ -264,6 +307,7 @@ class AnalysisReport(BaseModel):
     review_comments: List[ReviewComment] = Field(default_factory=list)
     suggested_fixes: List[FixPatch] = Field(default_factory=list)
     risk_assessment: RiskAssessment
+    observability: Optional[ObservabilityReport] = None
 
 # Progress Event for SSE / WebSocket
 class ProgressEvent(BaseModel):

@@ -16,6 +16,7 @@ export const Navbar: React.FC = () => {
   const navItems = [
     { label: 'Overview', path: '/', icon: Layers },
     { label: 'New Analysis', path: '/new', icon: PlusCircle },
+    { label: 'Observability', path: '/observability', icon: Activity },
     { label: 'Analysis History', path: '/history', icon: History },
     { label: 'Settings', path: '/settings', icon: Settings },
   ];
