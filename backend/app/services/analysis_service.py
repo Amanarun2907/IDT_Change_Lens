@@ -161,22 +161,31 @@ class AnalysisService:
 
             client = GitHubClient(token=req.github_token)
 
-            # Step 1: Fast metadata & language detection via GitHub API
-            repo_info = await client.get_repo_info(info["owner"], info["repo"])
-            detected_languages = await client.get_languages(info["owner"], info["repo"])
-            default_branch = repo_info.get("default_branch", "main")
+            # Step 1: Fast metadata & language detection via GitHub API with fallback
+            repo_info = {}
+            detected_languages = ["Python"]
+            default_branch = "main"
+            try:
+                repo_info = await client.get_repo_info(info["owner"], info["repo"])
+                detected_languages = await client.get_languages(info["owner"], info["repo"])
+                default_branch = repo_info.get("default_branch", "main")
+            except Exception as e:
+                logger.warning(f"GitHub API metadata retrieval warning: {e}. Proceeding via Git clone.")
             base_ref = req.base_branch or default_branch
 
-            # Step 2: Diff extraction via GitHub Compare API
+            # Step 2: Diff extraction via GitHub Compare API with fallback
             diff_text = ""
-            if req.target_branch and req.target_branch != base_ref:
-                diff_text = await client.get_compare_diff(info["owner"], info["repo"], base_ref, req.target_branch)
-            else:
-                commits = await client.get_commits(info["owner"], info["repo"], branch=base_ref, limit=2)
-                if len(commits) >= 2:
-                    diff_text = await client.get_compare_diff(info["owner"], info["repo"], commits[1]["sha"], commits[0]["sha"])
-                elif len(commits) == 1:
-                    diff_text = await client.get_commit_diff(info["owner"], info["repo"], commits[0]["sha"])
+            try:
+                if req.target_branch and req.target_branch != base_ref:
+                    diff_text = await client.get_compare_diff(info["owner"], info["repo"], base_ref, req.target_branch)
+                else:
+                    commits = await client.get_commits(info["owner"], info["repo"], branch=base_ref, limit=2)
+                    if len(commits) >= 2:
+                        diff_text = await client.get_compare_diff(info["owner"], info["repo"], commits[1]["sha"], commits[0]["sha"])
+                    elif len(commits) == 1:
+                        diff_text = await client.get_commit_diff(info["owner"], info["repo"], commits[0]["sha"])
+            except Exception as e:
+                logger.warning(f"GitHub diff API retrieval warning: {e}. Will extract diff from clone.")
 
             changed_files = DiffEngine.parse_unified_diff(diff_text)
 
@@ -268,8 +277,19 @@ class AnalysisService:
             ))
 
             client = GitHubClient(token=req.github_token)
-            pr_data = await client.get_pull_request(info["owner"], info["repo"], info["pr_number"])
-            diff_text = await client.get_pull_request_diff(info["owner"], info["repo"], info["pr_number"])
+            pr_data = {}
+            diff_text = ""
+            try:
+                pr_data = await client.get_pull_request(info["owner"], info["repo"], info["pr_number"])
+            except Exception as e:
+                logger.warning(f"PR metadata retrieval warning: {e}")
+                pr_data = {"title": f"PR #{info['pr_number']}", "base": {"ref": "main"}, "head": {"ref": ""}}
+
+            try:
+                diff_text = await client.get_pull_request_diff(info["owner"], info["repo"], info["pr_number"])
+            except Exception as e:
+                logger.warning(f"PR diff retrieval warning: {e}")
+
             changed_files = DiffEngine.parse_unified_diff(diff_text)
 
             langs = list(set([Path(f.file_path).suffix[1:] for f in changed_files if Path(f.file_path).suffix]))

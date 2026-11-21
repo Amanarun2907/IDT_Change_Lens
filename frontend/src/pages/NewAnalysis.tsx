@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { 
   GitBranch, 
   GitPullRequest, 
@@ -13,7 +13,8 @@ import {
   FileText,
   ShieldAlert,
   Bug,
-  HelpCircle
+  HelpCircle,
+  Info
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -76,6 +77,7 @@ export const NewAnalysis: React.FC = () => {
   const [analysisDepth, setAnalysisDepth] = useState('comprehensive');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimitNotice, setRateLimitNotice] = useState<string | null>(null);
 
   // Preset Template Loader
   const loadScenario = (type: 'harmless' | 'bug' | 'security' | 'edge') => {
@@ -151,9 +153,13 @@ def format_greeting(name: str) -> str:
     if (!repoUrl.trim()) return;
     try {
       setError(null);
+      setRateLimitNotice(null);
       const res = await api.validateGitHubUrl(repoUrl, githubToken);
       setRepoValidated(true);
       if (res.default_branch) setBaseBranch(res.default_branch);
+      if (res.rate_limited) {
+        setRateLimitNotice('GitHub unauthenticated API rate limit reached on your IP. ChangeLens will analyze this repository via Git shallow clone fallback. Provide a GitHub token in Settings to query the REST API directly.');
+      }
       try {
         const bRes = await api.getBranches(repoUrl, githubToken);
         if (bRes.branches && bRes.branches.length > 0) {
@@ -163,8 +169,13 @@ def format_greeting(name: str) -> str:
         // ignore branch fetch failure
       }
     } catch (err: any) {
-      setRepoValidated(false);
-      setError(err.message || 'Invalid GitHub repository URL');
+      if (err.message && err.message.toLowerCase().includes('rate limit')) {
+        setRepoValidated(true);
+        setRateLimitNotice('GitHub API unauthenticated rate limit reached. Analysis will proceed via Git shallow clone fallback. You can also provide a GitHub token for elevated REST API access.');
+      } else {
+        setRepoValidated(false);
+        setError(err.message || 'Invalid GitHub repository URL');
+      }
     }
   };
 
@@ -278,6 +289,21 @@ def format_greeting(name: str) -> str:
           <span>GitHub Repo</span>
         </button>
       </div>
+
+      {rateLimitNotice && (
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 flex items-start justify-between gap-3 text-amber-300 text-xs animate-fadeIn">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold text-amber-200">GitHub API Rate Limit Fallback Active</div>
+              <p className="text-[11px] text-amber-300/90 mt-0.5">{rateLimitNotice}</p>
+            </div>
+          </div>
+          <Link to="/settings" className="px-2.5 py-1 rounded bg-amber-900/60 hover:bg-amber-800 text-amber-200 text-[10px] font-semibold border border-amber-700/60 shrink-0">
+            Add Token &rarr;
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/30 flex items-start gap-3 text-red-300 text-sm">
@@ -485,10 +511,16 @@ def format_greeting(name: str) -> str:
                   Validate
                 </button>
               </div>
-              {repoValidated && (
+              {repoValidated && !rateLimitNotice && (
                 <div className="flex items-center gap-1.5 text-xs text-emerald-400 mt-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Repository validated successfully
+                </div>
+              )}
+              {repoValidated && rateLimitNotice && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-400 mt-1.5">
+                  <Info className="w-3.5 h-3.5" />
+                  Repository accessible via Git fallback (Rate limit active)
                 </div>
               )}
             </div>

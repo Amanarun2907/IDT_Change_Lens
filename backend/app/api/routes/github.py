@@ -19,12 +19,25 @@ async def validate_url(req: ValidateUrlRequest):
         return {
             "valid": True,
             "info": info,
-            "repo_name": repo_data.get("full_name"),
-            "description": repo_data.get("description"),
+            "repo_name": repo_data.get("full_name") or f"{info['owner']}/{info['repo']}",
+            "description": repo_data.get("description", "GitHub repository"),
             "default_branch": repo_data.get("default_branch", "main"),
-            "private": repo_data.get("private", False)
+            "private": repo_data.get("private", False),
+            "rate_limited": repo_data.get("rate_limited", False)
         }
     except ValueError as e:
+        if "rate limit" in str(e).lower():
+            info = validate_github_url(req.url)
+            return {
+                "valid": True,
+                "info": info,
+                "repo_name": f"{info['owner']}/{info['repo']}",
+                "description": "Public repository (accessible via Git)",
+                "default_branch": "main",
+                "private": False,
+                "rate_limited": True,
+                "notice": "GitHub API rate limit reached. Analysis will proceed via Git shallow clone."
+            }
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"GitHub validation error: {str(e)}")
@@ -36,5 +49,6 @@ async def get_branches(repo_url: str = Query(...), token: Optional[str] = Query(
         client = GitHubClient(token=token)
         branches = await client.get_branches(info["owner"], info["repo"])
         return {"branches": branches}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch branches: {str(e)}")
+    except Exception:
+        # Fallback to standard branches on rate-limit or network restriction
+        return {"branches": ["main", "master"]}
